@@ -1,0 +1,47 @@
+name: n8n Hello Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * *' # runs every day at 12:00 UTC
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install n8n
+        run: npm install -g n8n
+
+      - name: Create test workflow
+        run: |
+          cat <<'EOF' > hello.json
+          {
+            "name": "Say Hello",
+            "nodes": [
+              {
+                "parameters": {
+                  "functionCode": "console.log('Hello from n8n!'); return [{ json: { greeting: 'Hello from n8n workflow!' } }];"
+                },
+                "id": "1",
+                "name": "Hello Function",
+                "type": "n8n-nodes-base.function",
+                "typeVersion": 1,
+                "position": [250, 300]
+              }
+            ],
+            "connections": {}
+          }
+          EOF
+
+      - name: Run n8n workflow
+        env:
+          N8N_CREDENTIALS_OVERWRITE_DATA: '{"n8n_test":{"user":"test_user","password":"test_pass"}}'
+        run: n8n execute --file=hello.json
